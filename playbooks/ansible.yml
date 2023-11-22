@@ -1,0 +1,53 @@
+---
+- hosts: all
+  user: root
+  become: yes
+  tasks:
+    - name: Install Git 
+      yum:
+        name: git
+        state: present
+    - name: install maven
+      yum:
+        name: maven
+        state: present
+    - name: install java
+      yum: 
+        name: java
+        state: present
+    - name: tomcat installation
+      get_url:
+        url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.83/bin/apache-tomcat-9.0.83.tar.gz
+        dest: /root/apache-tomcat.tar.gz
+    - name: extract Tomcat
+      ansible.builtin.unarchive:
+        src: /root/apache-tomcat.tar.gz
+        dest: /root
+        remote_src: yes 
+    - name: create a directory
+      ansible.builtin.file:
+        name: project
+        path: /root
+        state: directory
+    - name: git clone
+      ansible.builtin.git:
+        repo: https://github.com/kondamram/casino.git
+        dest: /root/project
+        version: main
+    - name: maven build 
+      ansible.builtin.command:
+        cmd: mvn clean package
+        chdir: /root/project
+    - name: create a directory
+      ansible.builtin.file:
+        name: casino
+        path: /root/apache-tomcat-9.0.82/webapps
+        state: directory
+    - name: war deploy
+      copy:
+        src: /root/project/target/casino.war
+        dest: /root/apache-tomcat-9.0.83/webapps
+        remote_src: yes
+    - name: start tomcat
+      shell: nohup /root/apache-tomcat-9.0.82/bin/startup.sh
+  
